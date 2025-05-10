@@ -50,33 +50,32 @@ class UDPDataReader extends AbstractDataReader {
 
 	@Override
 	public String read() throws Exception {
-		String data = null;
-		
+		String data;
+
 		while (true) {
 			// If there is a backlog of sentences in the queue, then return the old sentences first so that each packet is uploaded compete.
-			if ((data = queue.poll()) != null)		
+			if ((data = queue.poll()) != null) {
 				break;
+			}
 
 			// Once the backlog is cleared, then read the port, split the packet into sentences,
 			// and store the individual sentences in the queue.  Queue will always start empty here.
 			data = receive();
+
 			tempBuffer.append(data);
 
-			// Check if the temporary buffer contains complete NMEA sentences
-			String[] lines = tempBuffer.toString().split("\\r?\\n");
-			for (int i = 0; i < lines.length; i++) {
-				if (i < lines.length - 1) {
+			String[] lines = tempBuffer.toString().split("\\r?\\n", -1);
+
+			//Contains line breaks
+			if (lines.length > 1) {
+				for (int i = 0; i < lines.length - 1; i++) {
 					// Complete NMEA sentence, add to the queue
 					queue.add(lines[i]);
-				} else {
-					// The last line may be incomplete, keep it in the temporary buffer
-					tempBuffer.setLength(0); // Clear the temporary buffer
-					tempBuffer.append(lines[i]);
 				}
+				tempBuffer.setLength(0);
+				tempBuffer.append(lines[lines.length - 1]);
 			}
-
 		}
-		
 		return data;
 	}
 
